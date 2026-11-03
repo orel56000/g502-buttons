@@ -1,0 +1,32 @@
+[package]
+name = "g502-buttons"
+version = "0.1.0"
+edition = "2024"
+description = "Makes every Logitech G502 Lightspeed button visible to apps, without Logitech software"
+
+[dependencies]
+ctrlc = { version = "3.4", features = ["termination"] }
+
+[target.'cfg(windows)'.dependencies]
+hidapi = "2.6"
+winreg = "0.55"
+windows-sys = { version = "0.59", features = [
+    "Win32_Foundation",
+    "Win32_Security",
+    "Win32_System_Console",
+    "Win32_System_Threading",
+    "Win32_UI_Input_KeyboardAndMouse",
+    "Win32_UI_WindowsAndMessaging",
+] }
+
+[target.'cfg(target_os = "linux")'.dependencies]
+# Pure-Rust hidraw backend: no libudev/C toolchain needed to build.
+hidapi = { version = "2.6", default-features = false, features = ["linux-native-basic-udev"] }
+evdev = "0.12"
+libc = "0.2"
+
+[profile.release]
+opt-level = "z"
+lto = true
+codegen-units = 1
+strip = true

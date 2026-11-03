@@ -1,0 +1,3 @@
+# Single self-contained exe: no Visual C++ runtime needed on the user's PC.
+[target.x86_64-pc-windows-msvc]
+rustflags = ["-C", "target-feature=+crt-static"]

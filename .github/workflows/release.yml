@@ -1,0 +1,66 @@
+name: Release
+
+# Push a tag like v0.1.0 to build both binaries and publish a GitHub release.
+# Run manually (Actions tab) to just build and download the artifacts.
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc # static CRT via .cargo/config.toml
+            bin: g502-buttons.exe
+            asset: g502-buttons-windows-x64.exe
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-musl # fully static: runs on any distro
+            bin: g502-buttons
+            asset: g502-buttons-linux-x64
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+      - if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y musl-tools
+      - run: cargo build --release --locked --target ${{ matrix.target }}
+      - shell: bash
+        run: cp target/${{ matrix.target }}/release/${{ matrix.bin }} ${{ matrix.asset }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.asset }}
+          path: ${{ matrix.asset }}
+
+  release:
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          merge-multiple: true
+      - run: sha256sum g502-buttons-* > SHA256SUMS.txt
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            g502-buttons-windows-x64.exe
+            g502-buttons-linux-x64
+            SHA256SUMS.txt
+          generate_release_notes: true
+          body: |
+            **Windows:** download `g502-buttons-windows-x64.exe`, double-click it, choose **Yes**. It installs for your user (no admin), runs hidden and starts with Windows. Uninstall from **Settings > Apps > G502 Buttons**.
+            If SmartScreen warns about an unknown publisher: **More info > Run anyway** (the exe is not code-signed).
+
+            **Linux:**
+            ```
+            chmod +x g502-buttons-linux-x64 && ./g502-buttons-linux-x64 --install
+            ```
+            Runs as a systemd user service started at login. Uninstall: `~/.local/bin/g502-buttons --uninstall`.

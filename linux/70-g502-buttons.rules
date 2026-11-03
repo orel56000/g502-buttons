@@ -1,0 +1,4 @@
+# g502-buttons: let the logged-in user talk HID++ to Logitech Lightspeed receivers
+# and create the virtual keyboard used to send mapped keys.
+KERNEL=="hidraw*", ATTRS{idVendor}=="046d", ATTRS{idProduct}=="c539|c53f|c547", TAG+="uaccess"
+KERNEL=="uinput", SUBSYSTEM=="misc", TAG+="uaccess", OPTIONS+="static_node=uinput"
