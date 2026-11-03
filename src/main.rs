@@ -59,6 +59,7 @@ const USAGE: &str = "usage: g502-buttons [--install | --uninstall]
   --uninstall   remove the app, its settings and autostart";
 
 const DEVICE_INDEX: u8 = 1; // receiver slot of the mouse
+const HEALTH_CHECK: Duration = Duration::from_secs(10);
 
 static RUNNING: AtomicBool = AtomicBool::new(true);
 static LOG: OnceLock<Mutex<fs::File>> = OnceLock::new();
@@ -70,9 +71,12 @@ fn running() -> bool {
 
 /// Prints, and on Windows (no visible console) also writes to the log file.
 fn log(msg: &str) {
-    println!("{msg}");
+    let secs = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).map_or(0, |d| d.as_secs());
+    let (h, m, s) = (secs / 3600 % 24, secs / 60 % 60, secs % 60);
+    let line = format!("{h:02}:{m:02}:{s:02} UTC  {msg}");
+    println!("{line}");
     if let Some(file) = LOG.get() {
-        let _ = writeln!(file.lock().unwrap(), "{msg}");
+        let _ = writeln!(file.lock().unwrap(), "{line}");
     }
 }
 
@@ -216,6 +220,7 @@ fn session(
     last_err: &mut String,
 ) -> Result<(), Error> {
     let rx = Receiver::open(api, DEVICE_INDEX)?;
+    rx.ensure_wireless_notifications()?;
     rx.ping()?;
     let spy = rx.feature_index(FEATURE_BUTTON_SPY)?;
     rx.start_spy(spy)?;
@@ -237,7 +242,14 @@ fn listen(
     held: &mut u16,
 ) -> Result<(), Error> {
     let mut next_config_check = Instant::now();
+    let mut next_health_check = Instant::now() + HEALTH_CHECK;
     while running() {
+        if Instant::now() >= next_health_check {
+            // Receiver-only query: catches a reset receiver or a handle gone stale after
+            // PC sleep, without waking the mouse.
+            next_health_check = Instant::now() + HEALTH_CHECK;
+            rx.ensure_wireless_notifications()?;
+        }
         if Instant::now() >= next_config_check {
             next_config_check = Instant::now() + Duration::from_secs(1);
             if config.changed() {
@@ -266,7 +278,16 @@ fn listen(
             *held = 0;
             if r[4] & 0x40 == 0 {
                 log("Mouse reconnected.");
-                rx.start_spy(spy)?;
+                // A just-woken mouse can need a moment before it accepts requests.
+                let mut started = rx.start_spy(spy);
+                for _ in 0..10 {
+                    if started.is_ok() {
+                        break;
+                    }
+                    thread::sleep(Duration::from_millis(200));
+                    started = rx.start_spy(spy);
+                }
+                started?;
             } else {
                 log("Mouse disconnected.");
             }

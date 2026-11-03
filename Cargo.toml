@@ -1,6 +1,6 @@
 [package]
 name = "g502-buttons"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2024"
 description = "Makes every Logitech G502 Lightspeed button visible to apps, without Logitech software"
 license = "MIT"
