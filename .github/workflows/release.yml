@@ -1,10 +1,12 @@
 name: Release
 
-# Push a tag like v0.1.0 to build both binaries and publish a GitHub release.
-# Run manually (Actions tab) to just build and download the artifacts.
+# Every push and PR builds both binaries (downloadable as artifacts).
+# Pushing a tag like v0.1.0 also publishes them as a GitHub release.
 on:
   push:
+    branches: [main]
     tags: ["v*"]
+  pull_request:
   workflow_dispatch:
 
 permissions:
@@ -25,7 +27,7 @@ jobs:
             asset: g502-buttons-linux-x64
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: ${{ matrix.target }}
@@ -34,7 +36,7 @@ jobs:
       - run: cargo build --release --locked --target ${{ matrix.target }}
       - shell: bash
         run: cp target/${{ matrix.target }}/release/${{ matrix.bin }} ${{ matrix.asset }}
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: ${{ matrix.asset }}
           path: ${{ matrix.asset }}
@@ -44,11 +46,11 @@ jobs:
     if: startsWith(github.ref, 'refs/tags/')
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           merge-multiple: true
       - run: sha256sum g502-buttons-* > SHA256SUMS.txt
-      - uses: softprops/action-gh-release@v2
+      - uses: softprops/action-gh-release@v3
         with:
           files: |
             g502-buttons-windows-x64.exe

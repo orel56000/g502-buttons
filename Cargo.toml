@@ -3,6 +3,8 @@ name = "g502-buttons"
 version = "0.1.0"
 edition = "2024"
 description = "Makes every Logitech G502 Lightspeed button visible to apps, without Logitech software"
+license = "MIT"
+repository = "https://github.com/orel56000/g502-buttons"
 
 [dependencies]
 ctrlc = { version = "3.4", features = ["termination"] }
