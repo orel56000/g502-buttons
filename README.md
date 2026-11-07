@@ -9,8 +9,6 @@ Use **every button** on your Logitech G502 Lightspeed in any app (Discord push-t
 
 The sniper button, DPI up/down and G9 normally never reach your apps: the mouse handles them internally. G502 Buttons turns them into regular key presses (F13–F16 by default), so any app can bind them.
 
-<a href="https://www.buymeacoffee.com/orel56000"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" height="48"></a>
-
 ## Features
 
 - **Install and forget.** One small file (under 1 MB) that installs itself, runs hidden in the background and survives restarts, sleep and receiver replugs.
